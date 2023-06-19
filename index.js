@@ -1,6 +1,4 @@
-// const AWS = require('aws-sdk');
-
-import AWS from 'aws-sdk';
+const AWS = require('aws-sdk');
 
 const translate = new AWS.Translate(); // translates to desired language
 const polly = new AWS.Polly(); // ai voice output
