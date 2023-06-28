@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "aws-sdk": "^2.1399.0"
+    "aws-sdk": "^2.1399.0",
+    "axios": "^1.4.0"
   }
 }

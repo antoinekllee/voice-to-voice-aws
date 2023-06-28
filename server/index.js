@@ -1,8 +1,11 @@
 const express = require('express');
 const WebSocket = require('ws');
+const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
+
+app.use(cors());
 
 // Create WebSocket server
 const wss = new WebSocket.Server({ noServer: true });
@@ -28,6 +31,8 @@ server.on('upgrade', (request, socket, head) => {
 app.post('/update', express.json(), (req, res) => 
 {
     const message = req.body;
+
+    console.log(message);
 
     // Broadcast message to all connected clients
     wss.clients.forEach(client => {

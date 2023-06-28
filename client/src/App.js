@@ -1,29 +1,33 @@
-import React, { useEffect, useState } from "react";
-import io from "socket.io-client";
+import React, { useEffect, useState, useRef } from "react";
 
 function App() {
-    const [message, setMessage] = useState(null);
+    const [update, setUpdate] = useState(null);
+    const ws = useRef(null);
 
     useEffect(() => {
         // Connect to the WebSocket server
-        const socket = io("http://localhost:3000");
+        ws.current = new WebSocket("ws://localhost:3001");
 
         // Listen for incoming messages
-        socket.on("message", (data) => {
-            const message = JSON.parse(data);
-            setMessage(message);
-        });
+        ws.current.onmessage = event => {
+            const message = JSON.parse(event.data);
+            setUpdate(message);
+        };
 
         // Clean up the effect
-        return () => socket.disconnect();
+        return () => {
+            if (ws.current) {
+                ws.current.close();
+            }
+        };
     }, []);
 
     return (
         <div className="App">
-            {message && (
+            {update && (
                 <div>
-                    <p>Original Text: {message.original}</p>
-                    <p>Translated Text: {message.translated}</p>
+                    <p>Original Text: {update.original}</p>
+                    <p>Translated Text: {update.translated}</p>
                 </div>
             )}
         </div>

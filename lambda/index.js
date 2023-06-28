@@ -1,5 +1,7 @@
 const AWS = require("aws-sdk");
 
+const axios = require("axios");
+
 const s3 = new AWS.S3();
 const translate = new AWS.Translate(); // translates to desired language
 const polly = new AWS.Polly(); // ai voice output
@@ -65,8 +67,8 @@ exports.handler = async (event) => {
                 console.log("Capture phrase intent called");
 
                 let phrase = event.request.intent.slots.phrase.value;
-                // let language = event.session.attributes.language || "english"; 
                 let language = event.session.attributes && event.session.attributes["language"];
+
                 console.log("THE LANGUAGE THAT WILL BE USED IS: " + language);
 
                 let languageData = languageInfo[language];
@@ -79,6 +81,16 @@ exports.handler = async (event) => {
                 let translatedText = await translateText(phrase, languageData.code);
 
                 console.log("TRANSLATED TEXT: " + translatedText);
+
+                let message = {
+                    original: phrase,
+                    translated: translatedText
+                };
+
+                console.log ("SENDING MESSAGE TO SERVER: ")
+                console.log(message);
+                
+                await axios.post('http://localhost:3001/update', message); 
 
                 let speech = await textToSpeech(translatedText, languageData.voice);
 
