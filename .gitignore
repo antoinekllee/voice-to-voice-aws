@@ -1,4 +1,6 @@
 /lambda/node_modules/
 /lambda/.DS_Store
 
+/server/node_modules/
+
 .DS_Store
