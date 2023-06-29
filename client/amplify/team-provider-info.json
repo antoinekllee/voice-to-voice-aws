@@ -10,6 +10,14 @@
       "StackName": "amplify-translatorspeaker-dev-94753",
       "StackId": "arn:aws:cloudformation:us-east-1:942794464436:stack/amplify-translatorspeaker-dev-94753/f8bfe6a0-161e-11ee-a1b8-0e0ee332ed2b",
       "AmplifyAppId": "dv4c72hfujh88"
+    },
+    "categories": {
+      "hosting": {
+        "amplifyhosting": {
+          "appId": "dv4c72hfujh88",
+          "type": "manual"
+        }
+      }
     }
   }
 }
