@@ -1,9 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const WebSocket = require('ws');
 const cors = require('cors');
+const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
-const port = process.env.PORT || 3001;
+
+const { PORT, OPENAI_KEY } = process.env;
+
+const configuration = new Configuration({ apiKey: OPENAI_KEY });
+const openai = new OpenAIApi(configuration);
 
 app.use(cors());
 
@@ -20,6 +26,7 @@ wss.on('connection', ws => {
 });
 
 // Create an HTTP server and attach WebSocket server
+const port = PORT || 3001;
 const server = app.listen(port, () => console.log(`Listening on port ${port}`));
 
 server.on('upgrade', (request, socket, head) => {
@@ -43,4 +50,34 @@ app.post('/update', express.json(), (req, res) =>
     });
 
     res.sendStatus(200);
+});
+
+app.post('/emotes', express.json(), async(req, res) =>
+{
+    try
+    {
+        const { text } = req.body;
+
+        const response = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo",
+            messages: [
+                { role: "system", content: "Generate a short sequence of anywhere between 3-5 emojis representative of the text. Do not output anything else." },
+                { role: "user", content: "Good morning." },
+                { role: "assistant", content: "🌞☀️🌅" },
+                { role: "user", content: "This is my first time in this city, what places would you suggest I visit?" },
+                { role: "assistant", content: "🏰🌸🍽️🌳" },
+                { role: "user", content: text }
+            ],
+            temperature: 0.7,
+            max_tokens: 100,   
+        });
+
+        const emojis = response.data.choices[0].message.content;
+        res.status(200).json({ status: "OK", emojis });
+    }
+    catch (error)
+    {
+        console.error(error);
+        res.status(500).json({ status: "ERROR", message: "Server error" });
+    }
 });
