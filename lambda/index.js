@@ -51,6 +51,17 @@ exports.handler = async (event) => {
 
                     console.log("LANGUAGE SET: " + language);
 
+                    let message = 
+                {
+                    type: "language",
+                    language: language
+                };
+
+                console.log ("SENDING MESSAGE TO SERVER: ")
+                console.log(message);
+                
+                await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
+
                     return {
                         version: "1.0",
                         response: {
@@ -82,7 +93,9 @@ exports.handler = async (event) => {
 
                 console.log("TRANSLATED TEXT: " + translatedText);
 
-                let message = {
+                let message = 
+                {
+                    type: "translation",
                     original: phrase,
                     translated: translatedText
                 };
@@ -91,7 +104,6 @@ exports.handler = async (event) => {
                 console.log(message);
                 
                 await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
-                // await axios.post('http://localhost:3001/update', message); 
 
                 let speech = await textToSpeech(translatedText, languageData.voice);
 
