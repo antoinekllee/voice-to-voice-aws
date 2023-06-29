@@ -1,40 +1,61 @@
 .App {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  background-color: #F0F0F0;
-  height: 100vh;
+    text-align: center;
+    font-family: "Roboto", sans-serif;
+    background-color: var(--bg);
+    height: 100vh;
 }
 
-.language-header {
-  text-align: right;
-  padding: 20px;
-  font-size: 20px;
-  color: #333;
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--nav);
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    height: 50px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.alexa-logo {
+    width: 80px;
+    height: 80px;
+    margin-right: 10px;
+    margin-top: 5px;
+}
+
+.logo-text {
+    font-size: 25px;
+    color: var(--text);
+    font-weight: 400;
+}
+
+.language-text {
+    font-size: 25px;
+    color: var(--text);
+    font-weight: 400;
+    margin-right: 10px;
 }
 
 .translation-container {
-  display: flex;
-  justify-content: space-evenly;
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 50px;
+    height: 70%;
 }
 
-.translation-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  width: 40%;
-  padding: 20px;
-  margin: 20px;
-  height: 300px;
+.card-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
 }
 
-.translation-label {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.translation-text {
-  font-size: 18px;
-  color: #666;
-  text-align: left;
+.emoji-container p {
+    font-size: 2em;
+    margin-top: 1em;
 }
