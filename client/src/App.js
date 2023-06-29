@@ -1,20 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
+import "./App.css";
 
 function App() {
     const [update, setUpdate] = useState(null);
     const ws = useRef(null);
 
     useEffect(() => {
-        // Connect to the WebSocket server
-        ws.current = new WebSocket("ws://localhost:3001");
-
-        // Listen for incoming messages
+        ws.current = new WebSocket("ws://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com");
         ws.current.onmessage = event => {
             const message = JSON.parse(event.data);
             setUpdate(message);
         };
-
-        // Clean up the effect
         return () => {
             if (ws.current) {
                 ws.current.close();
@@ -24,12 +20,21 @@ function App() {
 
     return (
         <div className="App">
-            {update && (
-                <div>
-                    <p>Original Text: {update.original}</p>
-                    <p>Translated Text: {update.translated}</p>
-                </div>
-            )}
+            <div className="language-header">Language: English</div>
+            <div className="translation-container">
+                {update && (
+                    <>
+                        <div className="translation-card">
+                            <label className="translation-label">Original</label>
+                            <p className="translation-text">{update.original}</p>
+                        </div>
+                        <div className="translation-card">
+                            <label className="translation-label">Translated</label>
+                            <p className="translation-text">{update.translated}</p>
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
     );
 }

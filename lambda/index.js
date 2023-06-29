@@ -90,7 +90,8 @@ exports.handler = async (event) => {
                 console.log ("SENDING MESSAGE TO SERVER: ")
                 console.log(message);
                 
-                await axios.post('http://localhost:3001/update', message); 
+                await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
+                // await axios.post('http://localhost:3001/update', message); 
 
                 let speech = await textToSpeech(translatedText, languageData.voice);
 
