@@ -1,157 +1,144 @@
 const AWS = require("aws-sdk");
-
 const axios = require("axios");
 
 const s3 = new AWS.S3();
-const translate = new AWS.Translate(); // translates to desired language
-const polly = new AWS.Polly(); // ai voice output
+const translate = new AWS.Translate();
+const polly = new AWS.Polly();
+
+const MAX_RETRY_ATTEMPTS = 3; 
+const RETRY_DELAY_MS = 500; 
 
 exports.handler = async (event) => {
     try {
         if (event.request.type === "LaunchRequest") {
-            console.log("Launch");
-            // Return a response to indicate that the LaunchRequest is working
-            return {
-                version: "1.0",
-                response: {
-                    outputSpeech: {
-                        type: "PlainText",
-                        text: "Activated. Start by setting a language.",
-                    },
-                    shouldEndSession: false,
-                },
-            };
+            return handleLaunchRequest();
         } else if (event.request.type === "IntentRequest") {
-            if (event.request.intent.name === "CaptureLanguageIntent") {
-                console.log("Capture language intent");
-
-                let language = event.request.intent.slots.language.value || "english";
-                language = language.toLowerCase();
-
-                console.log("LANGUAGE CAPTURED: " + language);
-
-                let languageData = languageInfo[language];
-
-                if (languageData === undefined) {
-                    console.log("Language not supported");
-
-                    return {
-                        version: "1.0",
-                        response: {
-                            outputSpeech: {
-                                type: "PlainText",
-                                text: `${language} is not supported`,
-                            },
-                            shouldEndSession: false,
-                        },
-                    };
-                } else {
-                    let sessionAttributes = event.session.attributes;
-                    sessionAttributes["language"] = language;
-
-                    console.log("LANGUAGE SET: " + language);
-
-                    let message = 
-                {
-                    type: "language",
-                    language: language
-                };
-
-                console.log ("SENDING MESSAGE TO SERVER: ")
-                console.log(message);
-                
-                await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
-
-                    return {
-                        version: "1.0",
-                        response: {
-                            outputSpeech: {
-                                type: "PlainText",
-                                text: `language set to ${language}`,
-                            },
-                            shouldEndSession: false,
-                        },
-                        sessionAttributes: sessionAttributes,
-                    };
-                }
-            } else if (event.request.intent.name === "CapturePhraseIntent") {
-                console.log("Capture phrase intent called");
-
-                let phrase = event.request.intent.slots.phrase.value;
-                let language = event.session.attributes && event.session.attributes["language"];
-
-                console.log("THE LANGUAGE THAT WILL BE USED IS: " + language);
-
-                let languageData = languageInfo[language];
-
-                if (languageData === undefined) {
-                    languageData = languageInfo["english"];
-                    console.log("LANGUAGE NOT SUPPORTED, DEFAULTING TO ENGLISH");
-                }
-
-                let translatedText = await translateText(phrase, languageData.code);
-
-                console.log("TRANSLATED TEXT: " + translatedText);
-
-                let message = 
-                {
-                    type: "translation",
-                    original: phrase,
-                    translated: translatedText
-                };
-
-                console.log ("SENDING MESSAGE TO SERVER: ")
-                console.log(message);
-                
-                await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
-
-                let speech = await textToSpeech(translatedText, languageData.voice);
-
-                console.log("Speech: " + speech);
-
-                // Return a response to Alexa
-                return {
-                    version: "1.0",
-                    response: {
-                        outputSpeech: {
-                            type: "SSML",
-                            ssml: `<speak><audio src="${speech}" /></speak>`,
-                        },
-                        shouldEndSession: false,
-                    },
-                };
-            } else if (event.request.intent.name === "AMAZON.FallbackIntent") {
-                console.log("Fallback intent called");
-
-                // Return a response to Alexa
-                return {
-                    version: "1.0",
-                    response: {
-                        outputSpeech: {
-                            type:"PlainText",
-                            text: "Sorry, I didn't understand that. Can you rephrase?",
-                        },
-                        shouldEndSession: false,
-                    },
-                };
+            switch(event.request.intent.name) {
+                case "CaptureLanguageIntent":
+                    return await handleCaptureLanguageIntent(event);
+                case "CapturePhraseIntent":
+                    return await handleCapturePhraseIntent(event);
+                case "AMAZON.FallbackIntent":
+                    return handleFallbackIntent();
+                default:
+                    return handleUnrecognizedIntent();
             }
         }
     } catch (error) {
         console.error(error);
-
-        // Return an error response to Alexa
-        return {
-            version: "1.0",
-            response: {
-                outputSpeech: {
-                    type: "PlainText",
-                    text: "An error occurred while processing your request. Please try again.",
-                },
-                shouldEndSession: false,
-            },
-        };
+        return handleException(error);
     }
 };
+
+async function handleLaunchRequest() {
+    return buildResponse("Activated.");
+}
+
+async function handleCaptureLanguageIntent(event) {
+    let language = event.request.intent.slots.language.value || "english";
+    language = language.toLowerCase();
+    
+    let languageData = languageInfo[language];
+
+    if (languageData === undefined) {
+        return buildResponse(`${language} is not supported`);
+    } else {
+        let sessionAttributes = event.session.attributes;
+        sessionAttributes["language"] = language;
+        
+        let message = {
+            type: "language",
+            language: language
+        };
+        
+        await sendToServerWithRetry(message);
+        return buildResponse(`${language} set.`, sessionAttributes);
+    }
+}
+
+async function handleCapturePhraseIntent(event) {
+    let phrase = event.request.intent.slots.phrase.value;
+
+    let sessionAttributes = event.session.attributes;
+    let language = sessionAttributes && sessionAttributes["language"];
+    
+    let languageData = languageInfo[language];
+
+    if (languageData === undefined) {
+        languageData = languageInfo["english"];
+    }
+
+    let translatedText = await translateText(phrase, languageData.code);
+    
+    let message = {
+        type: "translation",
+        original: phrase,
+        translated: translatedText
+    };
+    
+    await sendToServerWithRetry(message);
+    
+    let speech = await textToSpeech(translatedText, languageData.voice);
+    return buildResponseWithSSML(`<speak><audio src="${speech}" /></speak>`, sessionAttributes);
+}
+
+function handleFallbackIntent() {
+    return buildResponse("Please try again.");
+}
+
+function handleUnrecognizedIntent() {
+    return buildResponse("Please try again.");
+}
+
+function handleException(error) {
+    if (error instanceof TranslateException) {
+        return buildResponse("There was an issue translating your phrase. Please try a different language or phrase.");
+    } else {
+        return buildResponse("Please try again.");
+    }
+}
+
+async function sendToServerWithRetry(message, attempt = 0) {
+    try {
+        await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
+    } catch (error) {
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            await sendToServerWithRetry(message, attempt + 1);
+        } else {
+            console.error(`Failed to send message to server after ${MAX_RETRY_ATTEMPTS} attempts`, error);
+            throw error;
+        }
+    }
+}
+
+function buildResponse(speechText, sessionAttributes = {}) {
+    return {
+        version: "1.0",
+        sessionAttributes,
+        response: {
+            outputSpeech: {
+                type: "PlainText",
+                text: speechText,
+            },
+            shouldEndSession: false,
+        },
+    };
+}
+
+function buildResponseWithSSML(ssmlText, sessionAttributes = {}) {
+    return {
+        version: "1.0",
+        sessionAttributes,
+        response: {
+            outputSpeech: {
+                type: "SSML",
+                ssml: ssmlText,
+            },
+            shouldEndSession: false,
+        },
+    };
+}
 
 async function translateText(text, targetLanguage) {
     try {
@@ -179,16 +166,15 @@ const languageInfo = {
     dutch: { code: "nl", voice: "Lotte" },
     english: { code: "en", voice: "Joanna" },
     finnish: { code: "fi", voice: "Suvi" },
-    french: { code: "fr", voice: "Rémi" },
+    french: { code: "fr", voice: "Lea" },
     hindi: { code: "hi", voice: "Aditi" },
     german: { code: "de", voice: "Marlene" },
-    icelandic: { code: "is", voice: "Dóra" },
     italian: { code: "it", voice: "Bianca" },
     japanese: { code: "ja", voice: "Mizuki" },
     korean: { code: "ko", voice: "Seoyeon" },
     norwegian: { code: "no", voice: "Liv" },
     polish: { code: "pl", voice: "Ewa" },
-    portuguese: { code: "pt", voice: "Vitória" },
+    portuguese: { code: "pt", voice: "Ines" },
     romanian: { code: "ro", voice: "Carmen" },
     russian: { code: "ru", voice: "Tatyana" },
     spanish: { code: "es", voice: "Lupe" },
