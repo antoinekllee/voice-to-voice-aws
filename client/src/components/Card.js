@@ -1,5 +1,11 @@
 import React from "react";
 import classes from "./Card.module.css";
+import { motion } from 'framer-motion';
+
+const textVariants = {
+    out: { opacity: 0 },
+    in: { opacity: 1 }
+};
 
 function Card(props) {
     const { title, text, isPlaceholder } = props;
@@ -11,7 +17,17 @@ function Card(props) {
                 <label className={classes.headerText}>{title}</label>
             </div>
             <div className={classes.textContainer}>
-                <p className={textClass}>{text}</p>
+                <motion.p 
+                    className={textClass}
+                    variants={textVariants}
+                    initial="out"
+                    animate="in"
+                    exit="out"
+                    key={text} // Force re-render when text changes
+                    transition={{ duration: 0.5 }}
+                >
+                    {text}
+                </motion.p>
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import alexaLogo from './assets/alexaLogo.png'; 
 import awsLogo from './assets/awsLogo.png'; 
@@ -128,7 +128,9 @@ function App() {
             </div>
             <div className="translation-container">
                 <div className="card-container">
+                <AnimatePresence>
                     <Card title={"English " + languageEmojis["english"]} text={translation ? translation.original : "Waiting..."} isPlaceholder={translation === null} />
+                </AnimatePresence>
                 </div>
                 <motion.img 
                     src={alexaLogo} 
@@ -140,7 +142,9 @@ function App() {
                     transition={{ type: "spring", duration: 1 }}
                 />
                 <div className="card-container">
-                    <Card title={language.text + " " + language.emoji} text={translation ? translation.translated : "Waiting..."} isPlaceholder={translation === null} />
+                    <AnimatePresence>
+                        <Card title={language.text + " " + language.emoji} text={translation ? translation.translated : "Waiting..."} isPlaceholder={translation === null} />
+                    </AnimatePresence>
                 </div>
             </div>
             <div className="emoji-container">

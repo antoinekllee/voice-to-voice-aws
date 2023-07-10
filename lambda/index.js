@@ -26,7 +26,7 @@ exports.handler = async (event) => {
         }
     } catch (error) {
         console.error(error);
-        return handleException(error);
+        return buildResponse("Please try again.");
     }
 };
 
@@ -97,14 +97,6 @@ function handleFallbackIntent() {
 
 function handleUnrecognizedIntent() {
     return buildResponse("Please try again.");
-}
-
-function handleException(error) {
-    if (error instanceof TranslateException) {
-        return buildResponse("There was an issue translating your phrase. Please try a different language or phrase.");
-    } else {
-        return buildResponse("Please try again.");
-    }
 }
 
 async function sendToServerWithRetry(message, attempt = 0) {
