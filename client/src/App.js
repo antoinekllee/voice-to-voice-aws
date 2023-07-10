@@ -66,14 +66,13 @@ function App() {
             ws.current.onmessage = async(event) => {
                 const message = JSON.parse(event.data);
 
-                if (message.type === "language") {
-                    const newLanguage = {
-                        text: message.language.charAt(0).toUpperCase() + message.language.slice(1),
-                        emoji: languageEmojis[message.language]
-                    };
-                    setLanguage(newLanguage);
-                }
-                else if (message.type === "translation") {
+                const newLanguage = {
+                    text: message.language.charAt(0).toUpperCase() + message.language.slice(1),
+                    emoji: languageEmojis[message.language]
+                };
+                setLanguage(newLanguage);
+
+                if (message.type === "translation") {
                     setIsAnimating(true); 
                     setTimeout(() => setIsAnimating(false), 1000); 
 
@@ -100,6 +99,11 @@ function App() {
                     else {
                         setEmotes(splitEmojis(data.emojis));
                     }
+                }
+                else
+                {
+                    setTranslation(null);
+                    setEmotes([]);
                 }
             };
         }

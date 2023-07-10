@@ -30,7 +30,15 @@ exports.handler = async (event) => {
     }
 };
 
-async function handleLaunchRequest() {
+async function handleLaunchRequest() 
+{
+    let message = {
+        type: "init",
+        language: "english"
+    };
+
+    await sendToServerWithRetry(message);
+
     return buildResponse("Activated.");
 }
 
@@ -73,7 +81,8 @@ async function handleCapturePhraseIntent(event) {
     let message = {
         type: "translation",
         original: phrase,
-        translated: translatedText
+        translated: translatedText,
+        language: language
     };
     
     await sendToServerWithRetry(message);
