@@ -34,9 +34,27 @@ const languageEmojis = {
     welsh: "🏴󠁧󠁢󠁷󠁬󠁳󠁿"
 }
 
+function isEmoji(str) {
+    const ranges = [
+        "\ud83c[\udf00-\udfff]", // U+1F300 to U+1F3FF
+        "\ud83d[\udc00-\ude4f]", // U+1F400 to U+1F64F
+        "\ud83d[\ude80-\udeff]", // U+1F680 to U+1F6FF
+        "\ud83d[\udd00-\uddff]", // U+1F700 to U+1F77F
+        "\u2600-\u27bf", // Miscellaneous Symbols
+        "\u1f900-\u1f9ff", // U+1F900 to U+1F9FF
+    ];
+    let emojiRegex = new RegExp(ranges.join("|"), "g");
+    return str.match(emojiRegex);
+}
+
 function splitEmojis(text) {
-    const split = text.split(/([\uD800-\uDBFF][\uDC00-\uDFFF])/);
-    return split.filter((emoji) => emoji !== "");
+    const emojis = isEmoji(text);
+    if (emojis) {
+        const split = emojis.join("").split(/([\uD800-\uDBFF][\uDC00-\uDFFF])/);
+        return split.filter((emoji) => emoji !== "");
+    } else {
+        return [];
+    }
 }
 
 function App() {
@@ -46,6 +64,8 @@ function App() {
     
     const ws = useRef(null);
     const [wsStatus, setWsStatus] = useState('DISCONNECTED');
+    // const [isListening, setIsListening] = useState(true);
+    const isListening = useRef(true); 
 
     const [isAnimating, setIsAnimating] = useState(false);
     
@@ -57,20 +77,30 @@ function App() {
     useEffect(() => {
         function connectWebSocket() 
         {
-            ws.current = new WebSocket("ws://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com");
+            ws.current = new WebSocket("ws://vocice-to-voice-server-env.eba-mf6mtamm.us-east-1.elasticbeanstalk.com/update");
             ws.current.onopen = () => setWsStatus('CONNECTED');
             ws.current.onclose = () => {
                 setWsStatus('DISCONNECTED');
                 setTimeout(connectWebSocket, 1000);  // try reconnect after 1 sec
             };
             ws.current.onmessage = async(event) => {
+                if (!isListening.current) return; 
+
+                isListening.current = false; 
+
+                console.log('WebSocket message received:', event.data);
+                
                 const message = JSON.parse(event.data);
 
-                const newLanguage = {
-                    text: message.language.charAt(0).toUpperCase() + message.language.slice(1),
-                    emoji: languageEmojis[message.language]
-                };
-                setLanguage(newLanguage);
+                try {
+                    const newLanguage = {
+                        text: message.language.charAt(0).toUpperCase() + message.language.slice(1),
+                        emoji: languageEmojis[message.language]
+                    };
+                    setLanguage(newLanguage);
+                } catch(error) {
+                    console.error('An error occurred when trying to process the language: ', error);
+                }
 
                 if (message.type === "translation") {
                     setIsAnimating(true); 
@@ -84,7 +114,7 @@ function App() {
 
                     setEmotes([]);
 
-                    const response = await fetch("http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/emotes", {
+                    const response = await fetch("http://vocice-to-voice-server-env.eba-mf6mtamm.us-east-1.elasticbeanstalk.com/emotes", {
                         body: JSON.stringify({ text: message.original }), 
                         headers: { "Content-Type": "application/json" },
                         method: "POST",
@@ -97,6 +127,7 @@ function App() {
                         setEmotes([]);
                     }
                     else {
+                        console.log (data.emojis)
                         setEmotes(splitEmojis(data.emojis));
                     }
                 }
@@ -105,6 +136,8 @@ function App() {
                     setTranslation(null);
                     setEmotes([]);
                 }
+
+                setTimeout(() => { isListening.current = true; }, 1000); 
             };
         }
 

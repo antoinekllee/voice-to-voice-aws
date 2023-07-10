@@ -39,7 +39,7 @@ async function handleLaunchRequest()
 
     await sendToServerWithRetry(message);
 
-    return buildResponse("Activated.");
+    return buildResponse("Activated. Set a language.");
 }
 
 async function handleCaptureLanguageIntent(event) {
@@ -56,7 +56,7 @@ async function handleCaptureLanguageIntent(event) {
         
         let message = {
             type: "language",
-            language: language
+            language: language || "english"
         };
         
         await sendToServerWithRetry(message);
@@ -82,7 +82,7 @@ async function handleCapturePhraseIntent(event) {
         type: "translation",
         original: phrase,
         translated: translatedText,
-        language: language
+        language: language || "english"
     };
     
     await sendToServerWithRetry(message);
@@ -101,7 +101,7 @@ function handleUnrecognizedIntent() {
 
 async function sendToServerWithRetry(message, attempt = 0) {
     try {
-        await axios.post('http://translator-speaker-server-env.eba-sahpi3it.us-east-1.elasticbeanstalk.com/update', message); 
+        await axios.post('http://vocice-to-voice-server-env.eba-mf6mtamm.us-east-1.elasticbeanstalk.com/update', message); 
     } catch (error) {
         if (attempt < MAX_RETRY_ATTEMPTS) {
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
@@ -201,7 +201,7 @@ async function textToSpeech(text, voice) {
         // Define S3 upload parameters
         let timestamp = new Date().getTime();
         let s3Params = {
-            Bucket: "alexa-polly-translations",
+            Bucket: "alexa-translations",
             Key: `translation_${timestamp}.mp3`,
             Body: audioBuffer,
         };
