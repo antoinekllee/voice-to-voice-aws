@@ -101,7 +101,8 @@ function handleUnrecognizedIntent() {
 
 async function sendToServerWithRetry(message, attempt = 0) {
     try {
-        await axios.post('http://vocice-to-voice-server-env.eba-mf6mtamm.us-east-1.elasticbeanstalk.com/update', message); 
+        const serverUrl = process.env.SERVER_URL || "http://vocice-to-voice-server-env.eba-mf6mtamm.us-east-1.elasticbeanstalk.com";
+        await axios.post(serverUrl + "/update", message); 
     } catch (error) {
         if (attempt < MAX_RETRY_ATTEMPTS) {
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
